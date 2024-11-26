@@ -5,7 +5,7 @@ const regd_users = express.Router();
 
 let users = [];
 
-const isValid = (username)=>{ //returns boolean
+const isValid = (username)=>{ 
     let userswithsamename = users.filter((user) => {
         return user.username === username;
     });
@@ -47,61 +47,59 @@ regd_users.post("/login", (req,res) => {
     }
 });
 
-// Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-    const isbn = req.params.isbn; // Extract ISBN
-    const review = req.query.review; // Extract review from query
-    const username = req.session.authorization?.username; // Extract username from session
-
-    // Validate inputs
-    if (!username) {
-        return res.status(401).json({ message: "User not authenticated" });
-    }
-
-    if (!review) {
-        return res.status(400).json({ message: "Review text is required" });
-    }
+    const isbn = req.params.isbn;
+    const review = req.query.review;
+    const username = req.session.authorization.username;
 
     if (!books[isbn]) {
         return res.status(404).json({ message: "Book not found" });
     }
 
-    // Add or update the review for this user
-    const book = books[isbn];
-    if (!book.reviews) {
-        book.reviews = {};
+    if (!review) {
+        return res.status(400).json({ message: "Review content is required" });
     }
-    book.reviews[username] = review;
 
-    return res.status(200).json({
-        message: `Review for book with ISBN ${isbn} successfully added/updated.`,
-        reviews: book.reviews
+    if (!books[isbn].reviews) {
+        books[isbn].reviews = {};
+    }
+
+    books[isbn].reviews[username] = review;
+
+    return res.status(200).json({ 
+        message: "Review added/updated successfully", 
+        reviews: books[isbn].reviews 
     });
 });
 
+
+
 regd_users.delete("/auth/review/:isbn", (req, res) => {
-    const isbn = req.params.isbn;
     const username = req.session.authorization?.username;
 
     if (!username) {
         return res.status(401).json({ message: "User not authenticated" });
     }
 
+    const isbn = req.params.isbn;
+
     if (!books[isbn]) {
         return res.status(404).json({ message: "Book not found" });
     }
 
-    const book = books[isbn];
-
-    if (!book.reviews || !book.reviews[username]) {
-        return res.status(404).json({ message: "No review found for this book" });
+    if (!books[isbn].reviews || Object.keys(books[isbn].reviews).length === 0) {
+        return res.status(404).json({ message: "No reviews found for this book" });
     }
 
-    delete book.reviews[username];
+    if (!books[isbn].reviews[username]) {
+        return res.status(404).json({ message: "No review found for this user" });
+    }
 
-    return res.status(200).json({
-        message: `Review for book with ISBN ${isbn} successfully deleted.`,
-        reviews: book.reviews
+    delete books[isbn].reviews[username];
+
+    return res.status(200).json({ 
+        message: "Review deleted successfully", 
+        reviews: books[isbn].reviews 
     });
 });
 
